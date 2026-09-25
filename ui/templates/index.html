@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CHATBOT TƯ VẤN GÓI KHÁM</title>
+<style>
+  :root{
+    --bg: #12181f;
+    --panel: #1a222b;
+    --bubble-bot: #232d38;
+    --bubble-user: #2f6f5e;
+    --text: #e6e9ec;
+    --muted: #8b98a5;
+    --accent: #3fb28f;
+    --border: #263140;
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: var(--bg);
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--text);
+  }
+  .app{
+    width: 420px;
+    height: 640px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  header{
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border);
+    font-size: 16px;
+    font-weight: 600;
+  }
+  #chat{
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .msg{
+    display: flex;
+    gap: 8px;
+    max-width: 85%;
+    align-items: flex-start;
+  }
+  .msg.user{
+    align-self: flex-end;
+    flex-direction: row-reverse;
+  }
+  .avatar{
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+    background: var(--border);
+  }
+  .msg.user .avatar{ background: var(--accent); }
+  .bubble{
+    padding: 9px 13px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+  }
+  .msg.bot .bubble{ background: var(--bubble-bot); }
+  .msg.user .bubble{ background: var(--bubble-user); }
+  form{
+    display: flex;
+    gap: 8px;
+    padding: 12px;
+    border-top: 1px solid var(--border);
+  }
+  #input{
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+  }
+  #input:focus{ border-color: var(--accent); }
+  button{
+    padding: 0 16px;
+    border: none;
+    border-radius: 10px;
+    background: var(--accent);
+    color: #06231c;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:disabled{ opacity: 0.5; cursor: default; }
+  .typing{ color: var(--muted); font-style: italic; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>CHATBOT TƯ VẤN GÓI KHÁM</header>
+  <div id="chat"></div>
+  <form id="form">
+    <input id="input" type="text" placeholder="Type your question..." autocomplete="off" />
+    <button id="send" type="submit">Send</button>
+  </form>
+</div>
+
+<script>
+  const chatEl = document.getElementById("chat");
+  const formEl = document.getElementById("form");
+  const inputEl = document.getElementById("input");
+  const sendBtn = document.getElementById("send");
+  const sessionId = crypto.randomUUID();
+
+  function addMessage(text, who){
+    const msg = document.createElement("div");
+    msg.className = "msg " + who;
+    msg.innerHTML = `<div class="avatar">${who === "user" ? "🧑" : "🤖"}</div><div class="bubble"></div>`;
+    msg.querySelector(".bubble").textContent = text;
+    chatEl.appendChild(msg);
+    chatEl.scrollTop = chatEl.scrollHeight;
+    return msg;
+  }
+
+  addMessage("Chào bạn, tôi là chatbot tư vấn gói khám. Bạn cần tôi giúp gì?", "bot");
+
+  formEl.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const text = inputEl.value.trim();
+    if (!text) return;
+
+    addMessage(text, "user");
+    inputEl.value = "";
+    sendBtn.disabled = true;
+    const typingMsg = addMessage("Typing...", "bot");
+    typingMsg.querySelector(".bubble").classList.add("typing");
+
+    try {
+      const res = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text, session_id: sessionId }),
+      });
+      const data = await res.json();
+      typingMsg.querySelector(".bubble").classList.remove("typing");
+      typingMsg.querySelector(".bubble").textContent = data.reply || "Something went wrong.";
+    } catch (err) {
+      typingMsg.querySelector(".bubble").classList.remove("typing");
+      typingMsg.querySelector(".bubble").textContent = "Connection error. Please try again.";
+    } finally {
+      sendBtn.disabled = false;
+      inputEl.focus();
+    }
+  });
+</script>
+
+</body>
+</html>
