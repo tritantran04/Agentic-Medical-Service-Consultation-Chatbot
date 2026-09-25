@@ -2,7 +2,7 @@
 
 An agent that **recommends health check-up packages** to users, built on Google's **A2A (Agent-to-Agent) protocol**. The agent takes a user's symptoms, age, or health-check needs, retrieves matching packages from an internal dataset using RAG, and replies in Vietnamese with the package name, price, and included services.
 
-> **Note:** This is an advisory chatbot only — it does not replace a doctor's diagnosis.
+> **Note:** This is an advisory chatbot only, it does not replace a doctor's diagnosis.
 
 ## Overview
 
@@ -21,7 +21,7 @@ Flow for a single question:
 Client (A2A)
    |
    v
-A2AServer (Starlette) --- /.well-known/agent.json
+A2AServer (Starlette)
    |
    v
 AgentTaskManager (task_manager.py)
