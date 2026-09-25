@@ -1,8 +1,9 @@
-# Health Checkup Package Consultant Chatbot
+# Agentic Medical Service Consultation Chatbot
 
-An **agentic RAG chatbot** that helps users find a suitable health checkup package based on their described symptoms, age, or health concerns. The system uses a static package catalog as its knowledge base and an LLM-driven agent that decides, per turn, whether retrieval is needed to answer the user's question.
+An **Agentic Medical Service Consultation Chatbot** that helps users find a suitable health checkup package based on their described symptoms, age, or health concerns. The system uses a static package catalog as its knowledge base and an LLM-driven agent that decides, per turn, whether retrieval is needed to answer the user's question.
+The agent is also wrapped with an A2A Server, so it can be called by other A2A-compliant agents over HTTP.
 
-> **Disclaimer:** This project is intended for educational and information-retrieval purposes. It is not a substitute for diagnosis, treatment, or professional medical advice.
+> **Disclaimer:** This project is not a substitute for diagnosis, treatment, or professional medical advice.
 
 ## Overview
 
@@ -25,27 +26,28 @@ The package catalog is a static JSON file (`package_services.json`) containing p
 User
   |
   v
-summarize_history
+Summarize history
   |
   v
-agent (LangGraph, tool-calling)
+Agent (LangGraph)
   |
-  +---------------------------+
-  |                           |
-  v                           v
-retrieve                  (no tool call)
-(search_medical_packages)      |
-  |                           |
-  v                           |
-ChromaDB vector search        |
-  |                           |
-  +-------------+-------------+
-                |
-                v
-        generate_answer
-                |
-                v
-          Final Response
+  +---------------------------------------+
+  |                                       |
+  v                                       v
+ RAG                                 Direct Answer
+(search_medical_packages)           (no tool call) 
+  |                                       |
+  v                                       |
+ChromaDB                                  |
+  |                                       |
+  +-------------------+-------------------+
+                      |
+                      v
+                Answer Generation
+              (openai/gpt-oss-20b)
+                      |
+                      v
+                Final Response
 ```
 
 ## Main Components
@@ -69,7 +71,7 @@ The main workflow is:
 START -> summarize_history -> agent -> retrieve (optional) -> generate_answer -> END
 ```
 
-The agent has one tool, `search_medical_packages`, and decides per turn whether to call it. Limited to a single tool call per turn (no multi-step loop).
+The agent has one tool, `search_medical_packages`, and decides per turn whether to call it.
 
 ### 3. Conversation Summarization
 
@@ -102,9 +104,9 @@ search_packages(query)
 
 All system and instruction prompts live in `prompts.py`:
 
-- `SYSTEM_MESSAGE` — the main system prompt defining the assistant's role, tool-selection rules, and conversation style.
-- `RETRIEVAL_INSTRUCTION` / `NO_RETRIEVAL_INSTRUCTION` — short task instructions selected in `generate_answer` depending on whether the tool was used.
-- `SUMMARY_HISTORY` — the prompt used by `summarize_history` to compress older turns.
+- `SYSTEM_MESSAGE` the main system prompt defining the assistant's role, tool-selection rules, and conversation style.
+- `RETRIEVAL_INSTRUCTION` / `NO_RETRIEVAL_INSTRUCTION` short task instructions selected in `generate_answer` depending on whether the tool was used.
+- `SUMMARY_HISTORY` the prompt used by `summarize_history` to compress older turns.
 
 ### 6. Conversation Memory
 
@@ -117,11 +119,10 @@ The chatbot is exposed as an [A2A](https://a2a-protocol.org/)-compliant agent:
 - An **Agent Card** describing the agent's skill and endpoint.
 - An **A2A Server** (`common/`, built on Starlette/Uvicorn) exposing the required JSON-RPC methods.
 - `task_manager.py` bridging incoming A2A tasks to `ServiceAgent`.
-- Streaming (SSE) and JWT-signed push notifications.
 
 ### 8. Web UI
 
-A minimal chat interface under `Flask/`, built with Flask, calling `ServiceAgent` directly for manual testing in a browser.
+A minimal chat interface under `ui/`, built with Flask, calling `ServiceAgent` directly for manual testing in a browser.
 
 ## Project Structure
 
@@ -134,12 +135,11 @@ project_root/
 │   ├── agent.py               # LangGraph agent, tools, and workflow
 │   ├── data.py                 # Package data loading and ChromaDB setup
 │   ├── prompts.py              # System prompt, tool-instruction prompts, summary prompt
-│   ├── package_services.json   # Package/service catalog (data source)
-│   └── vectors/                 # Persisted ChromaDB collection (created on first run)
+│   └── package_services.json   # Package/service catalog (data source) 
 │
 ├── task_manager.py             # AgentTaskManager: bridges A2A tasks to ServiceAgent
 │
-├── common/                     # A2A protocol plumbing (types, server, task manager base, auth)
+├── common/                     # A2A protocol plumbing
 │   ├── types.py
 │   ├── server/
 │   │   ├── __init__.py
@@ -150,12 +150,12 @@ project_root/
 │       ├── push_notification_auth.py
 │       └── in_memory_cache.py
 │
-├── Flask/
-│   ├── app.py                  # Minimal web chat UI
+├── ui/
+│   ├── app.py                  # Web chat UI (Flask)
 │   └── templates/
 │       └── index.html
 │
-├── requirements.txt
+├── requirements.txt            # Python dependencies
 └── README.md
 ```
 
@@ -178,19 +178,25 @@ Recommended environment:
 - Python 3.10+
 - Groq API key
 - Sufficient disk space for the `BAAI/bge-m3` model (~2.2 GB) and the local Chroma vector database
-- **Enough free RAM to load `BAAI/bge-m3`** — this has been observed to fail with a memory allocation error on machines with limited free RAM; closing other memory-heavy applications, or switching to a smaller embedding model, can resolve this (see Limitations)
 
 ## Installation
 
-### 1. Install dependencies
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/tritantran04/Agentic-Medical-Service-Consultation-Chatbot.git
+cd Agentic-Medical-Service-Consultation-Chatbot
+```
+
+### 2. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Environment Variables
+### 3. Environment Variables
 
-Create a `.env` file in the project root (not committed to the repository):
+Create a `.env` file in the project root:
 
 ```env
 GROQ_API_KEY=your_groq_api_key
@@ -199,18 +205,13 @@ GROQ_API_KEY=your_groq_api_key
 ## Run the Chatbot
 
 ```bash
-python -m agent.agent      # Command-line chat, no A2A — quickest way to test
+python -m agent.agent       # Run chatbot in terminal
 python -m agent             # A2A server (default localhost:10000)
-python Flask/app.py         # Web UI at localhost:5000
+python ui/app.py            # Web UI at localhost
 ```
 
 On first run, this will also download the `BAAI/bge-m3` model and build the Chroma index from `package_services.json`. The A2A Agent Card is available at `http://localhost:10000/.well-known/agent-card.json`; tasks are sent via JSON-RPC (`tasks/send`, `tasks/sendSubscribe`) to `http://localhost:10000/`.
 
-Example user query:
-
-```text
-Tôi 50 tuổi, hay bị tức ngực và khó thở, nên khám gói nào?
-```
 
 ## Key Features
 
@@ -223,15 +224,8 @@ Tôi 50 tuổi, hay bị tức ngực và khó thở, nên khám gói nào?
 
 ## Limitations
 
-- `openai/gpt-oss-120b` / `openai/gpt-oss-20b` on Groq occasionally fail with a `tool_use_failed` error (a known, currently unresolved Groq/gpt-oss compatibility issue, unrelated to this codebase). Retrying the question usually resolves it.
-- `BAAI/bge-m3` requires a fair amount of RAM to load; on constrained machines this can fail with a memory allocation error.
-- Retrieval is limited to a single tool call per turn (no multi-step ReAct-style loop).
-- No retry logic or observability/tracing around LLM and tool calls.
-- `SCORE_THRESHOLD` (0.35) has not been tuned against real usage data.
-- `MemorySaver` keeps conversation state in RAM only — not persisted across restarts.
-- The package catalog is a static file with no external sync mechanism.
-- Prototype for learning and research — not intended as a medical diagnostic system.
+- `openai/gpt-oss-120b` / `openai/gpt-oss-20b` on Groq occasionally fail with a `tool_use_failed` error. Retrying the question usually resolves it.
+- `BAAI/bge-m3` requires a fair amount of RAM to load; on constrained machines this can fail with a memory allocation error
 
 ## Author
-
-Tran Tri Tan
+**Tran Tri Tan**
