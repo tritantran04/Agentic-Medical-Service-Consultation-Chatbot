@@ -16,10 +16,10 @@ from langgraph.checkpoint.memory import MemorySaver
 from langchain_groq import ChatGroq
 try:
     from .data import search_packages, get_package_by_id, build_or_load_index
-    from .prompts import SUMMARY_HISTORY, SYSTEM_MESSAGE, RETRIEVAL_INSTRUCTION, NO_RETRIEVAL_INSTRUCTION
+    from .prompts import SUMMARY_HISTORY, SYSTEM_MESSAGE, RETRIEVAL_INSTRUCTION, NO_RETRIEVAL_INSTRUCTION, NO_TOOL_CALL_WARNING
 except ImportError:
     from data import search_packages, get_package_by_id, build_or_load_index
-    from prompts import SUMMARY_HISTORY, SYSTEM_MESSAGE, RETRIEVAL_INSTRUCTION, NO_RETRIEVAL_INSTRUCTION
+    from prompts import SUMMARY_HISTORY, SYSTEM_MESSAGE, RETRIEVAL_INSTRUCTION, NO_RETRIEVAL_INSTRUCTION, NO_TOOL_CALL_WARNING
 
 load_dotenv(find_dotenv())
 
@@ -140,6 +140,7 @@ def generate_answer(state: AgentState):
     gen_prompt = (
         f"NHIỆM VỤ: {instruction}\n\n"
         f"NGỮ CẢNH (từ tool, nếu có):\n{context or '(không có)'}\n\n"
+        f"{NO_TOOL_CALL_WARNING}\n" # Fix model's output error. Delete if change model 
         "CHỈ trả lời bằng ĐÚNG một đối tượng JSON hợp lệ, không kèm chữ nào khác, "
         "không dùng markdown code block, theo đúng định dạng:\n"
         '{"status": "input_required" | "completed" | "error", "message": "<câu trả lời cho người dùng>"}'
