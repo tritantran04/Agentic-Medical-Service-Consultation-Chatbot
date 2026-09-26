@@ -203,12 +203,13 @@ On first run, this will also download the `BAAI/bge-m3` model and build the Chro
 
 ## Key Features
 
-- **Agentic tool selection** using LangGraph — retrieval only runs when the agent decides it's needed
-- **Catalog-based RAG** with vector similarity search (ChromaDB)
+- **Agentic tool selection** using LangGraph
+- **Vector similarity search** with ChromaDB
+- **LLM tool calling** for dynamic retrieval decisions
+- **A2A-compliant:** Agent Card, A2A Server, streaming,...
+- **Web chat UI** for testing
+- **Conversation state management** with LangGraph `MemorySaver`
 - **Turn-aware history summarization**, compressing older conversation turns without splitting a question from its own answer
-- **Per-session conversation memory** via distinct `thread_id`/`sessionId` values
-- **A2A-compliant** — Agent Card, A2A Server, streaming, and push notifications, so other agents can call this chatbot over HTTP
-- **Minimal web chat UI** for manual testing
 
 ## Limitations
 
