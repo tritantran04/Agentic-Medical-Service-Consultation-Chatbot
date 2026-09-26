@@ -61,23 +61,11 @@ openai/gpt-oss-120b   (tool-selection, history summarization)
 openai/gpt-oss-20b    (final answer generation)
 ```
 
-### 2. Agentic Workflow
-
-The agent workflow is implemented with **LangGraph**.
-
-The main workflow is:
-
-```text
-START -> summarize_history -> agent -> retrieve (optional) -> generate_answer -> END
-```
-
-The agent has one tool, `search_medical_packages`, and decides per turn whether to call it.
-
-### 3. Conversation Summarization
+### 2. Conversation Summarization
 
 `summarize_history` groups messages into full turns (a turn starts at the user's message and ends at the model's final answer), so a question and its answer are never split apart. The most recent `K_TURNS` turns are kept raw; older turns are summarized via the `SUMMARY_HISTORY` prompt.
 
-### 4. RAG
+### 3. RAG
 
 The repository contains `package_services.json`, which stores the package and service catalog.
 
@@ -100,7 +88,7 @@ The retriever is implemented as:
 search_packages(query)
 ```
 
-### 5. Prompts
+### 4. Prompts
 
 All system and instruction prompts live in `prompts.py`:
 
@@ -108,11 +96,11 @@ All system and instruction prompts live in `prompts.py`:
 - `RETRIEVAL_INSTRUCTION` / `NO_RETRIEVAL_INSTRUCTION` short task instructions selected in `generate_answer` depending on whether the tool was used.
 - `SUMMARY_HISTORY` the prompt used by `summarize_history` to compress older turns.
 
-### 6. Conversation Memory
+### 5. Conversation Memory
 
 The workflow uses `MemorySaver` to maintain state per `sessionId`, so multiple concurrent sessions are supported. State is kept in RAM only and does not persist across restarts.
 
-### 7. A2A (Agent2Agent) Protocol Support
+### 6. A2A (Agent2Agent) Protocol Support
 
 The chatbot is exposed as an [A2A](https://a2a-protocol.org/)-compliant agent:
 
@@ -120,7 +108,7 @@ The chatbot is exposed as an [A2A](https://a2a-protocol.org/)-compliant agent:
 - An **A2A Server** (`common/`, built on Starlette/Uvicorn) exposing the required JSON-RPC methods.
 - `task_manager.py` bridging incoming A2A tasks to `ServiceAgent`.
 
-### 8. Web UI
+### 7. Web UI
 
 A minimal chat interface under `ui/`, built with Flask, calling `ServiceAgent` directly for manual testing in a browser.
 
