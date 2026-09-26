@@ -200,7 +200,6 @@ python ui/app.py            # Web UI at localhost
 
 On first run, this will also download the `BAAI/bge-m3` model and build the Chroma index from `package_services.json`. The A2A Agent Card is available at `http://localhost:10000/.well-known/agent-card.json`; tasks are sent via JSON-RPC (`tasks/send`, `tasks/sendSubscribe`) to `http://localhost:10000/`.
 
-
 ## Key Features
 
 - **Agentic tool selection** using LangGraph
